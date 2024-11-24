@@ -87,6 +87,7 @@ def download_menu():
             main_menu()
         case _:
             download_menu()
+    download_menu()
 
 
 
