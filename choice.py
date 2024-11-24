@@ -39,13 +39,13 @@ def custom_download_version_menu():
     os.system("cls")
     with open(const.APPDATA_PATH + "\\CML\\version_manifest.json", "r") as f:
         version_manifest = json.loads(f.read())
-        for version in version_manifest["versions"]:
-            print(version["id"])
-            print("|--版本类型: " + version["type"])
-            print("|--更新时间: " + (datetime.fromisoformat(version["time"]) + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S") + " UTC+8")
-            print("|--发布时间: " + (datetime.fromisoformat(version["releaseTime"]) + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S") + " UTC+8")
-            print()
-            version_id_list.append(version["id"])
+    for version in version_manifest["versions"]:
+        print(version["id"])
+        print("|--版本类型: " + version["type"])
+        print("|--更新时间: " + (datetime.fromisoformat(version["time"]) + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S") + " UTC+8")
+        print("|--发布时间: " + (datetime.fromisoformat(version["releaseTime"]) + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S") + " UTC+8")
+        print()
+        version_id_list.append(version["id"])
     answer = input("请输入您想选择的版本的完整版本号, 或者随便输入任意字符以退出:\n")
     if answer in version_id_list:
         download.download_file(version_manifest["versions"][version_id_list.index(answer)]["url"], f"{answer}.json", const.APPDATA_PATH + "\\CML\\versions_json\\")
@@ -64,15 +64,30 @@ def download_menu():
     answer = input("1.下载最新正式版\n2.下载最新测试版\n3.下载自定义版本\n4.退出\n请输入您想选择的序号:\n")
     match answer:
         case "1":
-            pass
+            version_id_list = []
+            with open(const.APPDATA_PATH + "\\CML\\version_manifest.json", "r") as f:
+                version_manifest = json.loads(f.read())
+            latest_version = version_manifest["latest"]["release"]
+            for version in version_manifest["versions"]:
+                version_id_list.append(version["id"])
+            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["release"])]["url"], f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\")
+            download.download_version(version_manifest["latest"]["release"])
         case "2":
-            pass
+            version_id_list = []
+            with open(const.APPDATA_PATH + "\\CML\\version_manifest.json", "r") as f:
+                version_manifest = json.loads(f.read())
+            latest_version = version_manifest["latest"]["snapshot"]
+            for version in version_manifest["versions"]:
+                version_id_list.append(version["id"])
+            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["snapshot"])]["url"],f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\")
+            download.download_version(version_manifest["latest"]["snapshot"])
         case "3":
             custom_download_version_menu()
         case "4":
             main_menu()
         case _:
             download_menu()
+
 
 
 def main_menu():
