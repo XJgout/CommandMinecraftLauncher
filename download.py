@@ -1,4 +1,14 @@
+import socket
+
 import requests
+
+def is_connected():
+    try:
+        socket.create_connection(("8.8.8.8", 53), timeout=3)
+        return True
+    except OSError:
+        return False
+
 
 def download_file(url, filename, path):
     response = requests.get(url, stream=True)
