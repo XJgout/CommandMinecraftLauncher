@@ -9,6 +9,10 @@ import threading
 import urllib3
 import time
 
+import platform
+
+import zipfile
+
 from concurrent.futures import ThreadPoolExecutor
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -30,7 +34,7 @@ def download_assets(version):
         os.makedirs(const.MINECRAFT_PATH + "\\assets\\indexes")
     if not os.path.exists(const.MINECRAFT_PATH + "\\assets\\objects"):
         os.makedirs(const.MINECRAFT_PATH + "\\assets\\objects")
-    download_file_print(version_json["assetIndex"]["url"], version_json["assetIndex"]["id"] + ".json", const.MINECRAFT_PATH + "\\assets\\indexes\\")
+    download_file(version_json["assetIndex"]["url"], version_json["assetIndex"]["id"] + ".json", const.MINECRAFT_PATH + "\\assets\\indexes\\", None, None, True, False)
     with open(const.MINECRAFT_PATH + "\\assets\\indexes\\" + version_json["assetIndex"]["id"] + ".json", "r") as f:
         version_assets_manifest = json.loads(f.read())
     with ThreadPoolExecutor() as executor:
@@ -38,7 +42,7 @@ def download_assets(version):
             if not os.path.exists(const.MINECRAFT_PATH + "\\assets\\objects\\" + version_assets_manifest["objects"][assets]["hash"][:2]):
                 os.makedirs(const.MINECRAFT_PATH + "\\assets\\objects\\" + version_assets_manifest["objects"][assets]["hash"][:2])
             if not os.path.exists(const.MINECRAFT_PATH + "\\assets\\objects\\" + version_assets_manifest["objects"][assets]["hash"][:2] + "\\" + version_assets_manifest["objects"][assets]["hash"]):
-                futures.append(executor.submit(download_file_print, f"https://resources.download.minecraft.net/{version_assets_manifest['objects'][assets]['hash'][:2]}/{version_assets_manifest['objects'][assets]['hash']}", version_assets_manifest["objects"][assets]["hash"], const.MINECRAFT_PATH + "\\assets\\objects\\" + version_assets_manifest["objects"][assets]["hash"][:2] + "\\"))
+                futures.append(executor.submit(download_file, f"https://resources.download.minecraft.net/{version_assets_manifest['objects'][assets]['hash'][:2]}/{version_assets_manifest['objects'][assets]['hash']}", version_assets_manifest["objects"][assets]["hash"], const.MINECRAFT_PATH + "\\assets\\objects\\" + version_assets_manifest["objects"][assets]["hash"][:2] + "\\", None, None, True, False))
             else:
                 print("文件存在 " + f"https://resources.download.minecraft.net/{version_assets_manifest['objects'][assets]['hash'][:2]}/{version_assets_manifest['objects'][assets]['hash']}")
 
@@ -51,26 +55,38 @@ def download_libraries(version):
     if not os.path.exists(const.MINECRAFT_PATH + "\\libraries\\"):
         os.makedirs(const.MINECRAFT_PATH + "\\libraries\\")
     with ThreadPoolExecutor() as executor:
+        libraries_in_windows = True
         for libraries in version_json["libraries"]:
             if "rules" in libraries:
                 for rule in libraries["rules"]:
                     if "action" in rule and rule["action"] == "allow" and "os" in rule and rule["os"]["name"] == "windows":
-                        if not "native" in libraries["downloads"]["artifact"]["path"]:
-                            if not os.path.exists(const.MINECRAFT_PATH + "\\libraries\\" + "/".join(libraries["downloads"]["artifact"]["path"].split("/")[:-1]) + "\\"):
-                                os.makedirs(const.MINECRAFT_PATH + "\\libraries\\" + "/".join(libraries["downloads"]["artifact"]["path"].split("/")[:-1]) + "\\", exist_ok=True)
-                            if not os.path.exists(const.MINECRAFT_PATH + "\\libraries\\" + libraries["downloads"]["artifact"]["path"]):
-                                futures.append(executor.submit(download_file_print, libraries["downloads"]["artifact"]["url"], libraries["downloads"]["artifact"]["path"].split("/")[-1], const.MINECRAFT_PATH + "\\libraries\\" + "/".join(libraries["downloads"]["artifact"]["path"].split("/")[:-1]) + "\\"))
+                        if rule["action"] == "disallow":
+                            if rule["os"]["name"] != "windows":
+                                libraries_in_windows = True
                             else:
-                                print("文件存在 " + libraries["downloads"]["artifact"]["url"])
-            else:
-                if not os.path.exists(const.MINECRAFT_PATH + "\\libraries\\" + "/".join(libraries["downloads"]["artifact"]["path"].split("/")[:-1]) + "\\"):
-                    if not "native" in libraries["downloads"]["artifact"]["path"]:
+                                libraries_in_windows = False
+                                break
+                        else:
+                            libraries_in_windows = True
+                    else:
+                        libraries_in_windows = False
+                        break
+            if libraries_in_windows:
+                if "classifiers" in libraries["downloads"]:
+                    if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\"):
+                        os.makedirs(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", exist_ok=True)
+                    if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"])):
+                        futures.append(executor.submit(download_file, libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["url"], os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"]), const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", version, libraries, True, True))
+                    else:
+                        print("文件存在 " + libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["url"])
+                if "artifact" in libraries["downloads"]:
+                    if not os.path.exists(const.MINECRAFT_PATH + "\\libraries\\" + "/".join(libraries["downloads"]["artifact"]["path"].split("/")[:-1]) + "\\"):
                         os.makedirs(const.MINECRAFT_PATH + "\\libraries\\" + "/".join(libraries["downloads"]["artifact"]["path"].split("/")[:-1]) + "\\", exist_ok=True)
-                if not os.path.exists(const.MINECRAFT_PATH + "\\libraries\\" + libraries["downloads"]["artifact"]["path"]):
-                    if not "native" in libraries["downloads"]["artifact"]["path"]:
-                        futures.append(executor.submit(download_file_print, libraries["downloads"]["artifact"]["url"], libraries["downloads"]["artifact"]["path"].split("/")[-1], const.MINECRAFT_PATH + "\\libraries\\" + "/".join(libraries["downloads"]["artifact"]["path"].split("/")[:-1]) + "\\"))
-                else:
-                    print("文件存在 " + libraries["downloads"]["artifact"]["url"])
+                    if not os.path.exists(const.MINECRAFT_PATH + "\\libraries\\" + libraries["downloads"]["artifact"]["path"]):
+                        futures.append(executor.submit(download_file, libraries["downloads"]["artifact"]["url"], os.path.basename(libraries["downloads"]["artifact"]["path"]), const.MINECRAFT_PATH + "\\libraries\\" + "/".join(libraries["downloads"]["artifact"]["path"].split("/")[:-1]) + "\\", None, None, True, False))
+                    else:
+                        print("文件存在 " + libraries["downloads"]["artifact"]["url"])
+
 
         for future in futures:
             future.result()
@@ -82,26 +98,25 @@ def download_version_jar(version):
         os.makedirs(const.MINECRAFT_PATH + "\\versions\\")
     os.makedirs(const.MINECRAFT_PATH + f"\\versions\\{version}\\", exist_ok=True)
     if not os.path.exists(const.MINECRAFT_PATH + f"\\versions\\{version}\\{version}.jar"):
-        download_file_print(version_json["downloads"]["client"]["url"], f"{version}.jar", const.MINECRAFT_PATH + f"\\versions\\{version}\\")
+        download_file(version_json["downloads"]["client"]["url"], f"{version}.jar", const.MINECRAFT_PATH + f"\\versions\\{version}\\", None, None, True, False)
     else:
         print("文件存在 " + version_json["downloads"]["client"]["url"])
     shutil.copy2(const.APPDATA_PATH + f"\\CML\\versions_json\\{version}.json", const.MINECRAFT_PATH + f"\\versions\\{version}\\{version}.json")
 
-def download_file(url, filename, path):
+def download_file(url, filename, path, version, libraries, is_print=False, is_natives=False):
+    if is_print:
+        print(f"正在下载 {url}...")
     response = requests.get(url, stream=True, verify=False)
     with open(path + filename, "wb") as f:
         for chunk in response.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
-
-def download_file_print(url, filename, path):
-    print(f"正在下载 {url}...")
-    response = requests.get(url, stream=True, verify=False)
-    with open(path + filename, "wb") as f:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
-    print(f"下载完成 {url}...")
+    if is_print:
+        print(f"下载完成 {url}...")
+    if is_natives:
+        with zipfile.ZipFile(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"]), 'r') as zip_ref:
+            zip_ref.extractall(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\")
+        os.remove(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"]))
 
 def download_version(answer):
     os.system("cls")

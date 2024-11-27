@@ -48,7 +48,7 @@ def custom_download_version_menu():
         version_id_list.append(version["id"])
     answer = input("请输入您想选择的版本的完整版本号, 或者随便输入任意字符以退出:\n")
     if answer in version_id_list:
-        download.download_file(version_manifest["versions"][version_id_list.index(answer)]["url"], f"{answer}.json", const.APPDATA_PATH + "\\CML\\versions_json\\")
+        download.download_file(version_manifest["versions"][version_id_list.index(answer)]["url"], f"{answer}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False, False)
         download.download_version(answer)
     else:
         download_menu()
@@ -57,7 +57,7 @@ def custom_download_version_menu():
 def download_menu():
     os.system("cls")
     if const.CONNECTED:
-        download.download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json", "version_manifest.json", const.APPDATA_PATH + "\\CML\\")
+        download.download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json", "version_manifest.json", const.APPDATA_PATH + "\\CML\\", None, None, False, False)
     else:
         input("你正处于离线模式, 无法获取版本列表")
         main_menu()
@@ -70,7 +70,7 @@ def download_menu():
             latest_version = version_manifest["latest"]["release"]
             for version in version_manifest["versions"]:
                 version_id_list.append(version["id"])
-            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["release"])]["url"], f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\")
+            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["release"])]["url"], f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False, False)
             download.download_version(version_manifest["latest"]["release"])
         case "2":
             version_id_list = []
@@ -79,7 +79,7 @@ def download_menu():
             latest_version = version_manifest["latest"]["snapshot"]
             for version in version_manifest["versions"]:
                 version_id_list.append(version["id"])
-            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["snapshot"])]["url"],f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\")
+            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["snapshot"])]["url"],f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False, False)
             download.download_version(version_manifest["latest"]["snapshot"])
         case "3":
             custom_download_version_menu()
