@@ -69,12 +69,13 @@ def download_libraries(version):
                         libraries_in_windows = True
             if libraries_in_windows:
                 if "classifiers" in libraries["downloads"]:
-                    if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\"):
-                        os.makedirs(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", exist_ok=True)
-                    if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"])):
-                        futures.append(executor.submit(download_file, libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["url"], os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"]), const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", version, libraries, True, True))
-                    else:
-                        print("文件存在 " + libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["url"])
+                    if libraries["downloads"]["classifiers"].get("natives-windows", None) is not None:
+                        if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\"):
+                            os.makedirs(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", exist_ok=True)
+                        if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"])):
+                            futures.append(executor.submit(download_file, libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["url"], os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"]), const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", version, libraries, True, True))
+                        else:
+                            print("文件存在 " + libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["url"])
                 if "artifact" in libraries["downloads"]:
                     if not "natives" in libraries["name"]:
                         if not os.path.exists(const.MINECRAFT_PATH + "\\libraries\\" + "/".join(libraries["downloads"]["artifact"]["path"].split("/")[:-1]) + "\\"):
@@ -84,13 +85,13 @@ def download_libraries(version):
                         else:
                             print("文件存在 " + libraries["downloads"]["artifact"]["url"])
                     else:
-                        if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\"):
-                            os.makedirs(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", exist_ok=True)
-                        if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["artifact"]["path"])):
-                            futures.append(executor.submit(download_file, libraries["downloads"]["artifact"]["url"], os.path.basename(libraries["downloads"]["artifact"]["path"]), const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", version, libraries, True, True))
-                        else:
-                            print("文件存在 " + libraries["downloads"]["artifact"]["url"])
-
+                        if "windows" in libraries["name"]:
+                            if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\"):
+                                os.makedirs(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", exist_ok=True)
+                            if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["artifact"]["path"])):
+                                futures.append(executor.submit(download_file, libraries["downloads"]["artifact"]["url"], os.path.basename(libraries["downloads"]["artifact"]["path"]), const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", version, libraries, True, True))
+                            else:
+                                print("文件存在 " + libraries["downloads"]["artifact"]["url"])
         for future in futures:
             future.result()
             shutil.rmtree(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + "windows", ignore_errors=True)
@@ -123,18 +124,21 @@ def download_file(url, filename, path, version, libraries, is_print=False, is_na
     if is_print:
         print(f"下载完成 {url}...")
     if is_natives:
-        if "classifiers" in libraries["downloads"]:
-            with zipfile.ZipFile(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"]), 'r') as zip_ref:
-                zip_ref.extractall(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\")
-            os.remove(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"]))
-        else:
-            with zipfile.ZipFile(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["artifact"]["path"])) as zip_ref:
-                zip_ref.extractall(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\")
-            os.remove(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["artifact"]["path"]))
-            for root, dirs, files in os.walk(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + "windows" + "\\" + "x64" if platform.machine().endswith("64") else "x86" if "amd" in platform.machine().lower() or "x86" in platform.machine().lower() else "arm64"):
-                for file in files:
-                    if file.endswith('.dll'):
-                        shutil.copy2(str(os.path.join(root, file)), const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\")
+        try:
+            if "classifiers" in libraries["downloads"]:
+                with zipfile.ZipFile(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"]), 'r') as zip_ref:
+                    zip_ref.extractall(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\")
+                os.remove(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["classifiers"][libraries["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"]))
+            else:
+                with zipfile.ZipFile(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["artifact"]["path"])) as zip_ref:
+                    zip_ref.extractall(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\")
+                os.remove(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + os.path.basename(libraries["downloads"]["artifact"]["path"]))
+                for root, dirs, files in os.walk(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + "windows" + "\\" + "x64" if platform.machine().endswith("64") else "x86" if "amd" in platform.machine().lower() or "x86" in platform.machine().lower() else "arm64"):
+                    for file in files:
+                        if file.endswith('.dll'):
+                            shutil.copy2(str(os.path.join(root, file)), const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\")
+        except Exception:
+            pass
 
 def download_version(answer):
     os.system("cls")
