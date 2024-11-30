@@ -64,9 +64,12 @@ def download_libraries(version):
                             libraries_in_windows = True
                         else:
                             libraries_in_windows = False
-                            break
                     else:
                         libraries_in_windows = True
+
+            if "linux" in libraries["name"] or "osx" in libraries["name"] or "unix" in libraries["name"]:
+                libraries_in_windows = False
+
             if libraries_in_windows:
                 if "classifiers" in libraries["downloads"]:
                     if libraries["downloads"]["classifiers"].get("natives-windows", None) is not None:
