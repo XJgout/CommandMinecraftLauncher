@@ -3,6 +3,7 @@ import os
 import const
 import download
 import shutil
+import launcher
 from datetime import datetime, timedelta
 
 def first_init_choice():
@@ -17,8 +18,10 @@ def first_init_choice():
 
     os.makedirs(const.APPDATA_PATH + "\\CML\\versions_json", exist_ok=True)
 
+    os.makedirs(const.APPDATA_PATH + "\\CML\\versions_libraries", exist_ok=True)
+
     if not os.path.exists(const.APPDATA_PATH + "\\CML\\ok"):
-        input("我们检测到您是第一次启动本程序, 需要初始化配置, 请尽量不要将本程序放置在temp目录或downloads等系统级目录, 我们将要在此目录创建.minecraft文件夹, 若没有做到这一点, 你随时可以退出, 请按任意键继续。")
+        input("我们检测到您是第一次启动本程序, 需要初始化配置, 请尽量不要将本程序放置在temp目录或downloads等系统级目录, 我们将要在此目录创建.minecraft文件夹, 若没有做到这一点, 您随时可以退出, 请按任意键继续。")
         answer = input("是否进行初始化配置？(y/N)\n")
         if answer == "y" or answer == "Y":
             os.makedirs(const.APPDATA_PATH + "\\CML")
@@ -33,6 +36,24 @@ def first_init_choice():
     else:
         return
 
+def launch_menu():
+    os.system("cls")
+    version_id_list = []
+    for version in os.listdir(const.MINECRAFT_PATH + "\\versions"):
+        version_id_list.append(version)
+
+    print(version_id_list)
+    answer = input("请选择要启动的版本, 或者随便输入任意字符以退出:\n")
+    if answer in version_id_list:
+        username = input("输入您的用户名, 或者不输入任何内容直接回车退出:\n")
+        if not username:
+            main_menu()
+        java = input("输入您的Java路径(带java.exe), 或者不输入任何内容直接回车退出:\n")
+        if not java:
+            main_menu()
+        launcher.launch(answer, username, java)
+    else:
+        main_menu()
 
 def custom_download_version_menu():
     version_id_list = []
@@ -59,7 +80,7 @@ def download_menu():
     if const.CONNECTED:
         download.download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json", "version_manifest.json", const.APPDATA_PATH + "\\CML\\", None, None, False, False)
     else:
-        input("你正处于离线模式, 无法获取版本列表")
+        input("您正处于离线模式, 无法获取版本列表")
         main_menu()
     answer = input("1.下载最新正式版\n2.下载最新测试版\n3.下载自定义版本\n4.退出\n请输入您想选择的序号:\n")
     match answer:
@@ -98,7 +119,7 @@ def main_menu():
         case "1":
             download_menu()
         case "2":
-            pass
+            launch_menu()
         case "3":
             pass
         case "4":

@@ -50,13 +50,14 @@ def download_assets(version):
             future.result()
 
 def download_libraries(version):
+    libraries_list = []
     with open(const.APPDATA_PATH + f"\\CML\\versions_json\\{version}.json") as f:
         version_json = json.loads(f.read())
     if not os.path.exists(const.MINECRAFT_PATH + "\\libraries\\"):
         os.makedirs(const.MINECRAFT_PATH + "\\libraries\\")
     with ThreadPoolExecutor() as executor:
-        libraries_in_windows = True
         for libraries in version_json["libraries"]:
+            libraries_in_windows = True
             if "rules" in libraries:
                 for rule in libraries["rules"]:
                     if "action" in rule and rule["action"] == "disallow":
@@ -87,6 +88,8 @@ def download_libraries(version):
                             futures.append(executor.submit(download_file, libraries["downloads"]["artifact"]["url"], os.path.basename(libraries["downloads"]["artifact"]["path"]), const.MINECRAFT_PATH + "\\libraries\\" + "/".join(libraries["downloads"]["artifact"]["path"].split("/")[:-1]) + "\\", None, None, True, False))
                         else:
                             print("文件存在 " + libraries["downloads"]["artifact"]["url"])
+                        libraries_list.append(libraries)
+
                     else:
                         if "windows" in libraries["name"]:
                             if not os.path.exists(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\"):
@@ -95,8 +98,11 @@ def download_libraries(version):
                                 futures.append(executor.submit(download_file, libraries["downloads"]["artifact"]["url"], os.path.basename(libraries["downloads"]["artifact"]["path"]), const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\", version, libraries, True, True))
                             else:
                                 print("文件存在 " + libraries["downloads"]["artifact"]["url"])
+                        
         for future in futures:
             future.result()
+            with open(const.APPDATA_PATH + f"\\CML\\versions_libraries\\{version}.json", "w+") as f:
+                f.write(json.dumps(libraries_list))
             shutil.rmtree(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + "windows", ignore_errors=True)
             shutil.rmtree(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\" + "META-INF", ignore_errors=True)
             for root, dirs, files in os.walk(const.MINECRAFT_PATH + "\\versions\\" + version + "\\" + version + "-natives" + "\\"):
@@ -145,7 +151,7 @@ def download_file(url, filename, path, version, libraries, is_print=False, is_na
 
 def download_version(answer):
     os.system("cls")
-    for i in [download_assets, download_libraries, download_version_jar]:
+    for i in [download_assets, download_version_jar, download_libraries]:
         t = threading.Thread(target=i, args=(answer,))
         threads.append(t)
         t.start()
