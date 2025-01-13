@@ -36,11 +36,12 @@ def launch(answer, username, java):
 
     try:
         game_argument_list = [f"{key} {value}" for key, value in game_argument_tuple.items()]
-        process = subprocess.Popen(java + " " + " ".join(jvm_argument_list) + ";" + const.MINECRAFT_PATH + "\\versions\\" + answer + "\\" + answer + ".jar" + "\"" + " " + game_version_json["mainClass"] + " " + " ".join(game_argument_list), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS)
-        for line in process.stdout:
-            print(line, end='')
-        for line in process.stderr:
-            print(line, end='')
+        process = subprocess.Popen(java + " " + " ".join(jvm_argument_list) + ";" + const.MINECRAFT_PATH + "\\versions\\" + answer + "\\" + answer + ".jar" + "\"" + " " + game_version_json["mainClass"] + " " + " ".join(game_argument_list), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='ignore', creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS)
+        if const.DEBUG:
+            for line in process.stdout:
+                print(line, end='')
+            for line in process.stderr:
+                print(line, end='')
         process.wait()
     except FileNotFoundError:
         os.system("cls")

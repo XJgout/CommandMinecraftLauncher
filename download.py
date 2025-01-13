@@ -28,17 +28,21 @@ def ensure_directory_exists(path):
         os.makedirs(path)
 
 def download_file(url, filename, path, version=None, libraries=None, is_print=False, is_natives=False):
-    if is_print:
+    if const.DEBUG and is_print:
         print(f"正在下载 {url}...")
-    response = requests.get(url, stream=True, verify=False)
-    with open(os.path.join(path, filename), "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
-    if is_print:
-        print(f"下载完成 {url}...")
-    if is_natives:
-        extract_natives(libraries, path, filename)
+    try:
+        response = requests.get(url, stream=True, verify=False)
+        with open(os.path.join(path, filename), "wb") as f:
+            for chunk in response.iter_content(chunk_size=2048):
+                if chunk:
+                    f.write(chunk)
+        if const.DEBUG and is_print:
+            print(f"下载完成 {url}...")
+        if is_natives:
+            extract_natives(libraries, path, filename)
+    except Exception as e:
+        if const.DEBUG:
+            print(f"下载失败 {url}: {e}")
 
 def extract_natives(libraries, path, filename):
     try:
@@ -51,8 +55,9 @@ def extract_natives(libraries, path, filename):
                 for file in files:
                     if file.endswith('.dll'):
                         shutil.copy2(os.path.join(root, file), path)
-    except Exception:
-        pass
+    except Exception as e:
+        if const.DEBUG:
+            print(f"解压失败 {filename}: {e}")
 
 def download_assets(version):
     with open(os.path.join(const.APPDATA_PATH, f"CML\\versions_json\\{version}.json")) as f:
@@ -67,9 +72,10 @@ def download_assets(version):
             asset_path = os.path.join(const.MINECRAFT_PATH, "assets\\objects", details["hash"][:2])
             ensure_directory_exists(asset_path)
             if not os.path.exists(os.path.join(asset_path, details["hash"])):
-                futures.append(executor.submit(download_file, f"https://resources.download.minecraft.net/{details['hash'][:2]}/{details['hash']}", details["hash"], asset_path, is_print=False))
+                futures.append(executor.submit(download_file, f"https://resources.download.minecraft.net/{details['hash'][:2]}/{details['hash']}", details["hash"], asset_path, is_print=True))
             else:
-                print(f"文件存在 https://resources.download.minecraft.net/{details['hash'][:2]}/{details['hash']}")
+                if const.DEBUG:
+                    print(f"文件存在 https://resources.download.minecraft.net/{details['hash'][:2]}/{details['hash']}")
         for future in futures:
             future.result()
 
@@ -105,14 +111,16 @@ def download_library_files(library, version, executor, libraries_list):
         if not os.path.exists(os.path.join(native_path, native_file)):
             futures.append(executor.submit(download_file, library["downloads"]["classifiers"][library["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["url"], native_file, native_path, version, library, is_print=False, is_natives=True))
         else:
-            print(f"文件存在 {library['downloads']['classifiers'][library['natives']['windows'].replace('${arch}', '64' if platform.machine().endswith('64') else '32')]['url']}")
+            if const.DEBUG:
+                print(f"文件存在 {library['downloads']['classifiers'][library['natives']['windows'].replace('${arch}', '64' if platform.machine().endswith('64') else '32')]['url']}")
     if "artifact" in library["downloads"]:
         artifact_path = os.path.join(const.MINECRAFT_PATH, "libraries", "/".join(library["downloads"]["artifact"]["path"].split("/")[:-1]))
         ensure_directory_exists(artifact_path)
         if not os.path.exists(os.path.join(artifact_path, os.path.basename(library["downloads"]["artifact"]["path"]))):
             futures.append(executor.submit(download_file, library["downloads"]["artifact"]["url"], os.path.basename(library["downloads"]["artifact"]["path"]), artifact_path, is_print=False))
         else:
-            print(f"文件存在 {library['downloads']['artifact']['url']}")
+            if const.DEBUG:
+                print(f"文件存在 {library['downloads']['artifact']['url']}")
         libraries_list.append(library)
 
 def clean_up_natives(version):
@@ -133,7 +141,8 @@ def download_version_jar(version):
     if not os.path.exists(os.path.join(version_path, f"{version}.jar")):
         download_file(version_json["downloads"]["client"]["url"], f"{version}.jar", version_path, is_print=False)
     else:
-        print(f"文件存在 {version_json['downloads']['client']['url']}")
+        if const.DEBUG:
+            print(f"文件存在 {version_json['downloads']['client']['url']}")
     shutil.copy2(os.path.join(const.APPDATA_PATH, f"CML\\versions_json\\{version}.json"), os.path.join(version_path, f"{version}.json"))
 
 def download_version(answer):
