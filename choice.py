@@ -24,7 +24,7 @@ def first_init_choice():
         input("我们检测到您是第一次启动本程序, 需要初始化配置, 请尽量不要将本程序放置在temp目录或downloads等系统级目录, 我们将要在此目录创建.minecraft文件夹, 若没有做到这一点, 您随时可以退出, 请按任意键继续。")
         answer = input("是否进行初始化配置？(y/N)\n")
         if answer == "y" or answer == "Y":
-            os.makedirs(const.APPDATA_PATH + "\\CML")
+            os.makedirs(const.APPDATA_PATH + "\\CML", exist_ok=True)
             with open(const.APPDATA_PATH + "\\CML\\ok", "w") as f:
                 f.write("ok")
             if not os.path.exists(const.APPDATA_PATH + "\\CML\\config.json"):
@@ -69,7 +69,7 @@ def custom_download_version_menu():
         version_id_list.append(version["id"])
     answer = input("请输入您想选择的版本的完整版本号, 或者随便输入任意字符以退出:\n")
     if answer in version_id_list:
-        download.download_file(version_manifest["versions"][version_id_list.index(answer)]["url"], f"{answer}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False, False)
+        download.download_file(version_manifest["versions"][version_id_list.index(answer)]["url"], f"{answer}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False)
         download.download_version(answer)
     else:
         download_menu()
@@ -78,7 +78,7 @@ def custom_download_version_menu():
 def download_menu():
     os.system("cls")
     if const.CONNECTED:
-        download.download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json", "version_manifest.json", const.APPDATA_PATH + "\\CML\\", None, None, False, False)
+        download.download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json", "version_manifest.json", const.APPDATA_PATH + "\\CML\\", None, None, False)
     else:
         input("您正处于离线模式, 无法获取版本列表")
         main_menu()
@@ -91,7 +91,7 @@ def download_menu():
             latest_version = version_manifest["latest"]["release"]
             for version in version_manifest["versions"]:
                 version_id_list.append(version["id"])
-            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["release"])]["url"], f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False, False)
+            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["release"])]["url"], f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False)
             download.download_version(version_manifest["latest"]["release"])
         case "2":
             version_id_list = []
@@ -100,7 +100,7 @@ def download_menu():
             latest_version = version_manifest["latest"]["snapshot"]
             for version in version_manifest["versions"]:
                 version_id_list.append(version["id"])
-            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["snapshot"])]["url"],f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False, False)
+            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["snapshot"])]["url"],f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False)
             download.download_version(version_manifest["latest"]["snapshot"])
         case "3":
             custom_download_version_menu()

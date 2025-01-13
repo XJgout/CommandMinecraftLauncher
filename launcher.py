@@ -9,15 +9,15 @@ import time
 def launch(answer, username, java):
     uuid_str = uuid.uuid4().hex
     jvm_argument_list = []
-    with open(const.APPDATA_PATH + f"\\CML\\versions_libraries\\{answer}.json", "rb") as f:
+    with open(const.MINECRAFT_PATH + f"\\versions\\{answer}\\{answer}.json", "rb") as f:
         version_libraries_json = json.loads(f.read())
-    classpath_list = [const.MINECRAFT_PATH + "\\libraries\\" + library["downloads"]["artifact"]["path"] for library in version_libraries_json]
+    classpath_list = [const.MINECRAFT_PATH + "\\libraries\\" + library["downloads"]["artifact"]["path"] for library in version_libraries_json["libraries"]]
     with open(const.MINECRAFT_PATH + "\\versions\\" + answer + f"\\{answer}.json", "rb") as f:
         game_version_json = json.loads(f.read())
     if "arguments" in game_version_json:
         jvm_arguments_json = game_version_json["arguments"]["jvm"]
         for jvm_argument in jvm_arguments_json:
-            if type(jvm_argument) == str:
+            if isinstance(jvm_argument, str):
                 jvm_argument_list.append(jvm_argument.replace("${natives_directory}", const.MINECRAFT_PATH + "\\versions\\" + answer + f"\\{answer}-natives").replace("${launcher_name}", "CML").replace("${launcher_version}", "0.0.1").replace("${classpath}", "\"" + ";".join(classpath_list)))
     else:
         jvm_argument_list.append(f"-Djava.library.path={const.MINECRAFT_PATH}\\versions\\{answer}\\{answer}-natives" + f" -cp \" {';'.join(classpath_list)}")
