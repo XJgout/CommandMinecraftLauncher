@@ -1,4 +1,5 @@
 import json
+import sys
 import os
 import const
 import download
@@ -32,7 +33,7 @@ def first_init_choice():
                     f.write("{}")
             os.makedirs(const.WORKING_PATH + "\\.minecraft", exist_ok=True)
         else:
-            exit()
+            sys.exit()
     else:
         return
 
@@ -69,7 +70,7 @@ def custom_download_version_menu():
         version_id_list.append(version["id"])
     answer = input("请输入您想选择的版本的完整版本号, 或者随便输入任意字符以退出:\n")
     if answer in version_id_list:
-        download.download_file(version_manifest["versions"][version_id_list.index(answer)]["url"], f"{answer}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False)
+        download.download_file(version_manifest["versions"][version_id_list.index(answer)]["url"], f"{answer}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, is_print=False)
         download.download_version(answer)
     else:
         download_menu()
@@ -78,7 +79,7 @@ def custom_download_version_menu():
 def download_menu():
     os.system("cls")
     if const.CONNECTED:
-        download.download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json", "version_manifest.json", const.APPDATA_PATH + "\\CML\\", None, None, False)
+        download.download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json", "version_manifest.json", const.APPDATA_PATH + "\\CML\\", None, is_print=False)
     else:
         input("您正处于离线模式, 无法获取版本列表")
         main_menu()
@@ -91,7 +92,7 @@ def download_menu():
             latest_version = version_manifest["latest"]["release"]
             for version in version_manifest["versions"]:
                 version_id_list.append(version["id"])
-            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["release"])]["url"], f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False)
+            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["release"])]["url"], f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, is_print=False)
             download.download_version(version_manifest["latest"]["release"])
         case "2":
             version_id_list = []
@@ -100,7 +101,7 @@ def download_menu():
             latest_version = version_manifest["latest"]["snapshot"]
             for version in version_manifest["versions"]:
                 version_id_list.append(version["id"])
-            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["snapshot"])]["url"],f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, None, False)
+            download.download_file(version_manifest["versions"][version_id_list.index(version_manifest["latest"]["snapshot"])]["url"],f"{latest_version}.json", const.APPDATA_PATH + "\\CML\\versions_json\\", None, is_print=False)
             download.download_version(version_manifest["latest"]["snapshot"])
         case "3":
             custom_download_version_menu()
@@ -110,7 +111,10 @@ def download_menu():
             download_menu()
     download_menu()
 
-
+def settings_menu():
+    os.system("cls")
+    input("设置菜单 - 按任意键返回主菜单")
+    main_menu()
 
 def main_menu():
     os.system("cls")
@@ -121,9 +125,9 @@ def main_menu():
         case "2":
             launch_menu()
         case "3":
-            pass
+            settings_menu()
         case "4":
             os.system("cls")
-            exit()
+            sys.exit()
         case _:
             main_menu()
