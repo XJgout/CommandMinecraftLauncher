@@ -98,14 +98,14 @@ def download_assets(version):
         version_json = json.load(f)
     ensure_directory_exists(os.path.join(const.MINECRAFT_PATH, "assets\\indexes"))
     ensure_directory_exists(os.path.join(const.MINECRAFT_PATH, "assets\\objects"))
-    download_file(version_json["assetIndex"]["url"], f"{version_json['assetIndex']['id']}.json", os.path.join(const.MINECRAFT_PATH, "assets\\indexes"), is_print=True)
+    download_file(version_json["assetIndex"]["url"], f"{version_json['assetIndex']['id']}.json", os.path.join(const.MINECRAFT_PATH, "assets\\indexes"), is_print=True, expected_hash=version_json["assetIndex"]["sha1"])
     with open(os.path.join(const.MINECRAFT_PATH, "assets\\indexes", f"{version_json['assetIndex']['id']}.json"), "r") as f:
         version_assets_manifest = json.load(f)
     with ThreadPoolExecutor() as executor:
         for asset, details in version_assets_manifest["objects"].items():
             asset_path = os.path.join(const.MINECRAFT_PATH, "assets\\objects", details["hash"][:2])
             ensure_directory_exists(asset_path)
-            if not os.path.exists(os.path.join(asset_path, details["hash"])):
+            if not os.path.exists(os.path.join(asset_path, details["hash"])) or calculate_file_hash(os.path.join(asset_path, details["hash"])) != details["hash"]:
                 futures.append(executor.submit(download_file, f"https://resources.download.minecraft.net/{details['hash'][:2]}/{details['hash']}", details["hash"], asset_path, is_print=True, expected_hash=details["hash"]))
             else:
                 if const.DEBUG:
@@ -143,8 +143,8 @@ def download_library_files(library, version, executor, libraries_list):
             native_path = os.path.join(const.MINECRAFT_PATH, "versions", version, f"{version}-natives")
             ensure_directory_exists(native_path)
             native_file = os.path.basename(library["downloads"]["classifiers"][library["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["path"])
-            if not os.path.exists(os.path.join(native_path, native_file)):
-                futures.append(executor.submit(download_file, library["downloads"]["classifiers"][library["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["url"], native_file, native_path, library, is_print=False, is_natives=True))
+            if not os.path.exists(os.path.join(native_path, native_file)) or calculate_file_hash(os.path.join(native_path, native_file)) != library["downloads"]["classifiers"][library["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["sha1"]:
+                futures.append(executor.submit(download_file, library["downloads"]["classifiers"][library["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["url"], native_file, native_path, library, is_print=False, is_natives=True, expected_hash=library["downloads"]["classifiers"][library["natives"]["windows"].replace("${arch}", "64" if platform.machine().endswith('64') else "32")]["sha1"]))
             else:
                 if const.DEBUG:
                     logging.info(f"文件存在 {library['downloads']['classifiers'][library['natives']['windows'].replace('${arch}', '64' if platform.machine().endswith('64') else '32')]['url']}")
@@ -154,8 +154,8 @@ def download_library_files(library, version, executor, libraries_list):
     if "artifact" in library["downloads"]:
         artifact_path = os.path.join(const.MINECRAFT_PATH, "libraries", "/".join(library["downloads"]["artifact"]["path"].split("/")[:-1]))
         ensure_directory_exists(artifact_path)
-        if not os.path.exists(os.path.join(artifact_path, os.path.basename(library["downloads"]["artifact"]["path"]))):
-            futures.append(executor.submit(download_file, library["downloads"]["artifact"]["url"], os.path.basename(library["downloads"]["artifact"]["path"]), artifact_path, is_print=False))
+        if not os.path.exists(os.path.join(artifact_path, os.path.basename(library["downloads"]["artifact"]["path"]))) or calculate_file_hash(os.path.join(artifact_path, os.path.basename(library["downloads"]["artifact"]["path"]))) != library["downloads"]["artifact"]["sha1"]:
+            futures.append(executor.submit(download_file, library["downloads"]["artifact"]["url"], os.path.basename(library["downloads"]["artifact"]["path"]), artifact_path, is_print=False, expected_hash=library["downloads"]["artifact"]["sha1"]))
         else:
             if const.DEBUG:
                 logging.info(f"文件存在 {library['downloads']['artifact']['url']}")
@@ -176,8 +176,8 @@ def download_version_jar(version):
     ensure_directory_exists(os.path.join(const.MINECRAFT_PATH, "versions"))
     version_path = os.path.join(const.MINECRAFT_PATH, "versions", version)
     ensure_directory_exists(version_path)
-    if not os.path.exists(os.path.join(version_path, f"{version}.jar")):
-        download_file(version_json["downloads"]["client"]["url"], f"{version}.jar", version_path, is_print=False)
+    if not os.path.exists(os.path.join(version_path, f"{version}.jar")) or calculate_file_hash(os.path.join(version_path, f"{version}.jar")) != version_json["downloads"]["client"]["sha1"]:
+        download_file(version_json["downloads"]["client"]["url"], f"{version}.jar", version_path, is_print=False, expected_hash=version_json["downloads"]["client"]["sha1"])
     else:
         if const.DEBUG:
             logging.info(f"文件存在 {version_json['downloads']['client']['url']}")

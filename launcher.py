@@ -11,7 +11,7 @@ def launch(answer, username, java):
     jvm_argument_list = []
     with open(const.MINECRAFT_PATH + f"\\versions\\{answer}\\{answer}.json", "rb") as f:
         version_libraries_json = json.loads(f.read())
-    classpath_list = [const.MINECRAFT_PATH + "\\libraries\\" + library["downloads"]["artifact"]["path"] for library in version_libraries_json["libraries"]]
+    classpath_list = [const.MINECRAFT_PATH + "\\libraries\\" + library["downloads"]["artifact"]["path"] for library in version_libraries_json["libraries"] if "artifact" in library["downloads"]]
     with open(const.MINECRAFT_PATH + "\\versions\\" + answer + f"\\{answer}.json", "rb") as f:
         game_version_json = json.loads(f.read())
     if "arguments" in game_version_json:
